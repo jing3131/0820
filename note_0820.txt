@@ -1,0 +1,129 @@
+# MVC   localhost/主目錄/Ｃontroller/Ｃontroller裡的方法/方法參數
+
+- .htaccess(路由設定 routing)
+RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-f                 // 找的到的file 交給Apache負責
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]         // 找不到的由index.php負責 ("url"可以隨意更改) url:原網址內容
+
+- controllers
+資料夾裡放所有的Controller
+Controller裡可以放function
+
+- core
+Controller.php:
+class Controller {
+    
+
+}
+
+App.php:
+public function __construct() {
+    $url = $this->parseUrl();
+        
+    $controllerName = "{$url[0]}Controller";                       // 一個類別名稱(HomeController)
+    if (!file_exists("controllers/$controllerName.php"))
+        return;
+    require_once "controllers/$controllerName.php";                // index引用過App.php -> 參考位置以index為主
+    $controller = new $controllerName;                             // 根據一個變數儲存的內容(HomeController)呼叫(新增)物件
+    $methodName = isset($url[1]) ? $url[1] : "index";              // $url[1]->  controller裡的function
+    if (!method_exists($controller, $methodName))
+        return;
+    unset($url[0]); unset($url[1]);
+    $params = $url ? array_values($url) : Array();                 // $params一個陣列，如果$params還有內容($url[2])，把它變陣列 -> function裡的參數
+    call_user_func_array(Array($controller, $methodName), $params);
+}
+public function parseUrl() {
+    f (isset($_GET["url"])) {                      // "url" -> .htaccess
+        $url = rtrim($_GET["url"], "/");            // 清除字尾的 "/"含以後的字元
+        $url = explode("/", $url);                  // 用 "/" 做分隔拆成陣列
+        return $url;
+    }
+}
+
+
+# Model
+User.php:
+class User {
+    public $name;
+}
+
+Controller.php:
+public function model($model) { 
+    require_once "models/$model.php";                   // index引用過Contorller.php -> 參考位置以index為主
+    return new $model ();
+}
+
+HomeController.php:
+function hello($name) {
+    $user = $this->model("User");
+    $user->name = $name;
+    echo "Hello! $user->name"; 
+}
+
+# View -> 畫面
+新增資料夾與Controller名稱相同(Home)
+資料夾裡再放入Controller的function名稱(hello.php)，裡面放執行的html
+
+Controller.php:
+class Controller {
+
+    public function model($model) { 
+        require_once "models/$model.php";                   // index引用過Contorller.php -> 參考位置以index為主
+        return new $model ();
+    }
+    public function view($view, $data = Array()) {          // view 輸出成html
+        require_once "views/$view.php";
+    }
+}
+
+HomeController.php:
+function hello($name) {
+    $user = $this->model("User");
+    $user->name = $name;
+    $this->view("Home/hello", $user);
+    // echo "Hello! $user->name"; 
+}
+
+
+
+* Lab_REST_API
+
+RewriteEngine on
+RewriteRule ^(.*)$ api.php?url=$1 [QSA,L]       // 都由api.php負責
+// 上述兩行的作用，在於將所有的請求都導向 api.php
+// 而原本的路徑內容，都以 url 參數傳進 api.php
+
+$method = $_SERVER['REQUEST_METHOD'];                       // 訪問頁面時的請求方法。例如：「GET」、「HEAD」，「POST」，「PUT」
+
+
+
+- encode、decode
+$obj = json_encode($row);                               // 將json物件轉換成字串json_encode(內容)
+$obj = json_decode($x, false);                          // 轉換成物件，json_decode(內容, 是否要變成關聯式陣列)
+echo $obj["cID"];                                       // -> 陣列 true
+echo $obj->cID;                                         // -> 物件 false
+
+
+
+# curl 爬蟲(LAb_cURL)
+
+// 1. 初始設定
+$ch = curl_init();              // 一個curl物件(憑證)
+
+// 2. 設定 / 調整參數
+curl_setopt($ch, CURLOPT_URL, "https://tw.appledaily.com/home/");    // 使用curl抓取的網站
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);                         // 是否回傳結果(yes = 1)
+curl_setopt($ch, CURLOPT_HEADER, 0);                                 // 標頭要不要
+// curl_setopt($ch, CURLOPT_POST, 1);                                   // 開啟post功能
+// curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);                     // 使用$postData
+
+// 3. 執行，取回 response 結果
+$output = curl_exec($ch);
+
+// 4. 關閉與釋放資源
+curl_close($ch);
+
+# XPath
+
+//*[@id="Content_rptList_hlLink_0"]/div             -> 在網頁元件的標籤右鍵複製 XPath
